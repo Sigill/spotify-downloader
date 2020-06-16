@@ -33,6 +33,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Spotdl:
+    """
+    This class is directly involved with the command-line
+    interface of the tool.
+
+    Parameters
+    ----------
+    args: `dict`
+        A dictionary containing arguments. These passed arguments will
+        override the default arguments used by the tool. In case an
+        invalid combination of arguments is passed, an `ArgumentError`
+        will be raised indicating the reason.
+    """
+
     def __init__(self, args={}):
         argument_handler = ArgumentHandler(args)
         arguments = argument_handler.run_errands()
@@ -49,6 +62,11 @@ class Spotdl:
         del self
 
     def match_arguments(self):
+        """
+        This is the main entry method that performs relevant work based
+        on whatever arguments have been passed.
+        """
+
         logger.debug("Received arguments:\n{}".format(self.arguments))
 
         if self.arguments.get("remove_config"):
@@ -113,6 +131,10 @@ class Spotdl:
                 spotify_tools.write_playlist_tracks(playlist, self.arguments["write_to"])
 
     def save_config(self, config_file=spotdl.config.DEFAULT_CONFIG_FILE, config=spotdl.config.DEFAULT_CONFIGURATION):
+        """
+        Writes provided configuration to config file.
+        """
+
         config_dir = os.path.dirname(config_file)
         os.makedirs(config_dir, exist_ok=True)
         logger.info('Writing configuration to "{0}":'.format(config_file))
@@ -127,10 +149,19 @@ class Spotdl:
         )
 
     def save_default_config(self):
+        """
+        Writes the default configuration to the default config file if
+        it does not already exist.
+        """
+
         if not os.path.isfile(spotdl.config.DEFAULT_CONFIG_FILE):
             self.save_config()
 
     def remove_saved_config(self, config_file=spotdl.config.DEFAULT_CONFIG_FILE):
+        """
+        Removes the config file if it exists.
+        """
+
         if os.path.isfile(spotdl.config.DEFAULT_CONFIG_FILE):
             logger.info('Removing "{}".'.format(spotdl.config.DEFAULT_CONFIG_FILE))
             os.remove(spotdl.config.DEFAULT_CONFIG_FILE)
@@ -138,6 +169,11 @@ class Spotdl:
             logger.info('File does not exist: "{}".'.format(spotdl.config.DEFAULT_CONFIG_FILE))
 
     def write_m3u(self, track_file, target_file=None):
+        """
+        Generates an M3U playlist from a given track file and writes it
+        to a target file.
+        """
+
         with open(track_file, "r") as fin:
             tracks = fin.read().splitlines()
 
@@ -198,6 +234,16 @@ class Spotdl:
                         output_file.write(m3u_key)
 
     def download_track(self, track):
+        """
+        Downloads a track given a track query, Spotify URI or a YouTube
+        URI.
+
+        Parameters
+        ----------
+        track: `str`
+            A Spotify URI, YouTube URI or a query.
+        """
+
         subtracks = track.split("::")
         download_track = subtracks[0]
         custom_metadata_track = len(subtracks) > 1
@@ -253,6 +299,13 @@ class Spotdl:
         return self.download_track_from_metadata(metadata)
 
     def should_we_overwrite_existing_file(self, overwrite):
+        """
+        Returns a `boolean` based on the given value of `overwrite`
+        parameter, where `overwrite` is one of `force`, `skip` or
+        `prompt`. The method will prompt for input via STDIN if the
+        value of `overwrite` is `prompt`.
+        """
+
         if overwrite == "force":
             logger.info("Forcing overwrite on existing file.")
             to_overwrite = True
@@ -264,18 +317,11 @@ class Spotdl:
 
         return to_overwrite
 
-    def generate_temp_filename(self, filename, for_stdout=False):
-        if for_stdout:
-            return filename
-        return "{filename}.temp".format(filename=filename)
-
-    def output_filename_filter(self, allow_spaces):
-        replace_spaces_with_underscores = not allow_spaces
-        if replace_spaces_with_underscores:
-            return lambda s: s.replace(" ", "_")
-        return lambda s: s
-
     def download_track_from_metadata(self, metadata):
+        """
+        Downloads track audio from the provided metadata.
+        """
+
         track = Track(metadata, cache_albumart=(not self.arguments["no_metadata"]))
         stream = metadata["streams"].get(
             quality=self.arguments["quality"],
@@ -301,7 +347,7 @@ class Spotdl:
             )
         )
         download_to_stdout = filename == "-"
-        temp_filename = self.generate_temp_filename(filename, for_stdout=download_to_stdout)
+        temp_filename = filename if download_to_stdout else filename + ".temp"
 
         to_skip_download = self.arguments["dry_run"]
         if os.path.isfile(filename):
@@ -335,33 +381,61 @@ class Spotdl:
             )
 
         if not self.arguments["no_metadata"]:
+            logger.info("Applying metadata")
             track.metadata["lyrics"] = track.metadata["lyrics"].join()
             self.apply_metadata(track, temp_filename, output_extension)
 
         if not download_to_stdout:
-            logger.debug("Renaming {temp_filename} to {filename}.".format(
+            logger.debug('Renaming "{temp_filename}" to "{filename}".'.format(
                 temp_filename=temp_filename, filename=filename
             ))
             os.rename(temp_filename, filename)
 
         return filename
 
-    def apply_metadata(self, track, filename, encoding):
-        logger.info("Applying metadata")
+    def apply_metadata(self, track, filename, encoding=None):
+        """
+        Applies metadata to a given track. This is the same as calling
+        `Track.apply_metadata` except this will only raise a warning if
+        an unsupported output format has been passed unlike
+        `Track.apply_metadata` which would raise a `TypeError`.
+
+        Parameters
+        ----------
+        track: `~spotdl.track.Track`
+        """
+
         try:
             track.apply_metadata(filename, encoding=encoding)
         except TypeError:
             logger.warning("Cannot apply metadata on provided output format.")
 
-    def strip_and_filter_duplicates(self, tracks):
-        filtered_tracks = spotdl.util.remove_duplicates(
-            tracks,
+    def strip_and_filter_duplicates(self, elements):
+        """
+        Removes any duplicate elements from the given list and strips
+        any whitespaces from elements.
+        """
+
+        filtered_elements = spotdl.util.remove_duplicates(
+            elements,
             condition=lambda x: x,
             operation=str.strip
         )
-        return filtered_tracks
+        return filtered_elements
 
     def filter_against_skip_file(self, items, skip_file):
+        """
+        Removes the element from `items` if there already exists the
+        same element in `skip_file`.
+
+        Parameters
+        ----------
+        items: `list`
+
+        skip_file: `str`
+            path to file.
+        """
+
         skip_items = spotdl.util.readlines_from_nonbinary_file(skip_file)
         filtered_skip_items = self.strip_and_filter_duplicates(skip_items)
         filtered_items = [item for item in items if not item in filtered_skip_items]

@@ -100,10 +100,15 @@ class SpotifyHelpers:
         """
         This function returns all the albums from a give artist_uri using the US
         market
-        :param artist_uri - spotify artist uri
-        :param album_type - the type of album to fetch (ex: single) the default is
-                            all albums
-        :param return - the album from the artist
+
+        Parameters
+        ----------
+        artist_uri: `str`
+            spotify artist uri
+
+        album_type: `str`
+            the type of album to fetch (ex: single) the default is
+            all albums
         """
 
         logger.debug('Fetching all albums for "{artist}".'.format(artist=artist_uri))
