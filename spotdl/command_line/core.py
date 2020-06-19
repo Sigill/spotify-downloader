@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 
 class Spotdl:
     """
-    This class is directly involved with the command-line
-    interface of the tool.
+    This class is directly involved with the command-line interface
+    of the tool. It allows downloading of tracks, writing M3U
+    playlists, and providers other useful methods.
 
     Parameters
     ----------
@@ -44,6 +45,65 @@ class Spotdl:
         override the default arguments used by the tool. In case an
         invalid combination of arguments is passed, an `ArgumentError`
         will be raised indicating the reason.
+
+    Examples
+    --------
+    + To download a track:
+
+        >>> from spotdl.command_line.core import Spotdl
+        >>> args = {
+        ...     "song": ["https://open.spotify.com/track/2lfPecqFbH8X4lHSpTxt8l",],
+        ... }
+        >>> with Spotdl(args) as spotdl_handler:
+        ...     spotdl_handler.match_arguments()
+
+    + To download tracks without metadata:
+
+        >>> from spotdl.command_line.core import Spotdl
+        >>> args = {
+        ...     "song": [
+        ...         "https://open.spotify.com/track/2lfPecqFbH8X4lHSpTxt8l",
+        ...         "ncs spectre"
+        ...     ],
+        ...     "no_metadata": True,
+        ... }
+        >>> with Spotdl(args) as spotdl_handler:
+        ...     spotdl_handler.match_arguments()
+
+    Similary, you can pass additional arguments (refer to the config fiile
+    to know what all arguments are supported).
+
+    + To download tracks from file:
+
+        >>> from spotdl.command_line.core import Spotdl
+        >>> args = {
+        ...     "list": "file_with_tracks.txt",
+        ... }
+        >>> with Spotdl(args) as spotdl_handler:
+        ...     spotdl_handler.match_arguments()
+
+    + You can also the call the download methods later on as per need:
+
+        >>> from spotdl.command_line.core import Spotdl
+        >>> args = {
+        ...     "no_encode": True,
+        ... }
+        >>> with Spotdl(args) as spotdl_handler:
+        ...     spotdl_handler.download_track("https://open.spotify.com/track/2lfPecqFbH8X4lHSpTxt8l")
+        ...     print("Downloading 2nd track.")
+        ...     spotdl_handler.download_track("ncs spectre")
+        ...     print("Downloading from file.")
+        ...     spotdl_handler.download_tracks_from_file("file_full_of_tracks.txt")
+
+    Using `with` is optional. You can also directly create :class:`Spotdl` objects:
+
+        >>> from spotdl.command_line.core import Spotdl
+        >>> args = {
+        ...     "no_encode": True,
+        ... }
+        >>> spotdl_handler = Spotdl(args)
+        >>> spotdl_handler.download_track("ncs spectre")
+
     """
 
     def __init__(self, args={}):
@@ -133,6 +193,14 @@ class Spotdl:
     def save_config(self, config_file=spotdl.config.DEFAULT_CONFIG_FILE, config=spotdl.config.DEFAULT_CONFIGURATION):
         """
         Writes provided configuration to config file.
+
+        Parameters
+        ----------
+        config_file: `str`
+            Path to write the configuration to.
+
+        config: `dict`
+            A `dict` consisting of configuration options.
         """
 
         config_dir = os.path.dirname(config_file)
@@ -160,6 +228,11 @@ class Spotdl:
     def remove_saved_config(self, config_file=spotdl.config.DEFAULT_CONFIG_FILE):
         """
         Removes the config file if it exists.
+
+        Parameters
+        ----------
+        config_file: `str`
+            Path to configuration file.
         """
 
         if os.path.isfile(spotdl.config.DEFAULT_CONFIG_FILE):
@@ -172,6 +245,15 @@ class Spotdl:
         """
         Generates an M3U playlist from a given track file and writes it
         to a target file.
+
+        Parameters
+        ----------
+        track_file: `str`
+            Path to file consisting of tracks.
+
+        target_file:`str`
+            Path to file to write the M3U playlist to. `None` indicates
+            to automatically determine it from the `track_file`.
         """
 
         with open(track_file, "r") as fin:
@@ -304,6 +386,11 @@ class Spotdl:
         parameter, where `overwrite` is one of `force`, `skip` or
         `prompt`. The method will prompt for input via STDIN if the
         value of `overwrite` is `prompt`.
+
+        Parameters
+        ----------
+        overwrite: `str`
+            One of `force`, `skip` or `prompt`.
         """
 
         if overwrite == "force":
@@ -320,6 +407,11 @@ class Spotdl:
     def download_track_from_metadata(self, metadata):
         """
         Downloads track audio from the provided metadata.
+
+        Parameters
+        ----------
+        metadata: `dict`
+            A `dict` consisting of metadata in standardized form.
         """
 
         track = Track(metadata, cache_albumart=(not self.arguments["no_metadata"]))
@@ -403,6 +495,14 @@ class Spotdl:
         Parameters
         ----------
         track: `~spotdl.track.Track`
+            A corresponding `~spotdl.track.Track` object.
+
+        filename: `str`
+            A filename where the audio file exists on the disk.
+
+        encoding: `str`, `None`
+            An encoding of `None` indicates to automatically determine
+            it from the filename.
         """
 
         try:
@@ -414,6 +514,11 @@ class Spotdl:
         """
         Removes any duplicate elements from the given list and strips
         any whitespaces from elements.
+
+        Parameters
+        ----------
+        elements: `list`
+            A list of elements.
         """
 
         filtered_elements = spotdl.util.remove_duplicates(
@@ -431,9 +536,10 @@ class Spotdl:
         Parameters
         ----------
         items: `list`
+            A list of elements.
 
         skip_file: `str`
-            path to file.
+            Path to file.
         """
 
         skip_items = spotdl.util.readlines_from_nonbinary_file(skip_file)
@@ -442,6 +548,15 @@ class Spotdl:
         return filtered_items
 
     def download_tracks_from_file(self, path):
+        """
+        Download tracks from file.
+
+        Parameters
+        ----------
+        path: `str`
+            Path to the file consisting of tracks.
+        """
+
         logger.info(
             'Checking and removing any duplicate tracks in "{}".'.format(path)
         )

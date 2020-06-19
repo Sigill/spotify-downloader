@@ -49,6 +49,9 @@ extensions = [
     # "sphinx_automodapi.automodapi",
 
     "sphinxcontrib.programoutput",
+    # This adds support for Googley formatted docstrings as they are
+    # easier to read than reStructuredText..
+    "sphinx.ext.napoleon"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
