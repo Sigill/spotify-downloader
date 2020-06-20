@@ -17,6 +17,9 @@ masterclient = None
 class AuthorizeSpotify(spotipy.Spotify):
     def __init__(self, client_id=None, client_secret=None):
         global masterclient
+        # `spotipy.Spotify` makes use of `self._session` and would
+        # result in an error. The below line is a workaround.
+        self._session = None
 
         credentials_provided = client_id is not None \
                            and client_secret is not None

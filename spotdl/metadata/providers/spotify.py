@@ -5,6 +5,7 @@ from spotdl.metadata import ProviderBase
 from spotdl.metadata.exceptions import SpotifyMetadataNotFoundError
 
 from spotdl.authorize.services import AuthorizeSpotify
+from spotdl.authorize import SpotifyAuthorizationError
 import spotdl.util
 
 import logging
@@ -14,19 +15,31 @@ logger = logging.getLogger(__name__)
 class ProviderSpotify(ProviderBase):
     def __init__(self, spotify=None):
         if spotify is None:
-            spotify = AuthorizeSpotify()
+            try:
+                spotify = AuthorizeSpotify()
+            except SpotifyAuthorizationError:
+                pass
         self.spotify = spotify
 
     def set_credentials(self, client_id, client_secret):
         token = self._generate_token(client_id, client_secret)
         self.spotify = spotipy.Spotify(auth=token)
 
+    def assert_credentials(self):
+        if self.spotify is None:
+            raise SpotifyAuthorizationError(
+                "You must first setup an AuthorizeSpotify instance, or pass "
+                "in client_id and client_secret to the set_credentials method."
+            )
+
     def from_url(self, url):
+        self.assert_credentials()
         logger.debug('Fetching Spotify metadata for "{url}".'.format(url=url))
         metadata = self.spotify.track(url)
         return self.metadata_to_standard_form(metadata)
 
     def from_query(self, query):
+        self.assert_credentials()
         tracks = self.search(query)["tracks"]["items"]
         if not tracks:
             raise SpotifyMetadataNotFoundError(
@@ -37,6 +50,7 @@ class ProviderSpotify(ProviderBase):
         return self.metadata_to_standard_form(tracks[0])
 
     def search(self, query):
+        self.assert_credentials()
         return self.spotify.search(query)
 
     def _generate_token(self, client_id, client_secret):
@@ -48,6 +62,7 @@ class ProviderSpotify(ProviderBase):
         return token
 
     def metadata_to_standard_form(self, metadata):
+        self.assert_credentials()
         artist = self.spotify.artist(metadata["artists"][0]["id"])
         album = self.spotify.album(metadata["album"]["id"])
 

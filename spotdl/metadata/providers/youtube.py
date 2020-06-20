@@ -222,7 +222,7 @@ class ProviderYouTube(ProviderBase):
                 'YouTube returned nothing for the given search '
                 'query ("{}")'.format(query)
             )
-        return self.from_url(watch_urls[0])
+        return self.from_url(watch_urls[0]["url"])
 
     def from_url(self, url, retries=5):
         logger.debug('Fetching YouTube metadata for "{url}".'.format(url=url))

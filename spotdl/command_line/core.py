@@ -103,7 +103,6 @@ class Spotdl:
         ... }
         >>> spotdl_handler = Spotdl(args)
         >>> spotdl_handler.download_track("ncs spectre")
-
     """
 
     def __init__(self, args={}):
@@ -391,6 +390,12 @@ class Spotdl:
         ----------
         overwrite: `str`
             One of `force`, `skip` or `prompt`.
+
+        Returns
+        -------
+        to_overwrite: `bool`
+            `True` or `False` depending on whether the existing file
+            should be overwritten or not.
         """
 
         if overwrite == "force":
@@ -488,14 +493,14 @@ class Spotdl:
     def apply_metadata(self, track, filename, encoding=None):
         """
         Applies metadata to a given track. This is the same as calling
-        `Track.apply_metadata` except this will only raise a warning if
+        method:`Track.apply_metadata` except this will only raise a warning if
         an unsupported output format has been passed unlike
         `Track.apply_metadata` which would raise a `TypeError`.
 
         Parameters
         ----------
-        track: `~spotdl.track.Track`
-            A corresponding `~spotdl.track.Track` object.
+        track: :class:`spotdl.track.Track` object
+            A corresponding :class:`spotdl.track.Track` object.
 
         filename: `str`
             A filename where the audio file exists on the disk.
@@ -519,6 +524,11 @@ class Spotdl:
         ----------
         elements: `list`
             A list of elements.
+
+        Returns
+        -------
+        filtered_elements: `list`
+            A list of filtered elements.
         """
 
         filtered_elements = spotdl.util.remove_duplicates(
@@ -540,6 +550,11 @@ class Spotdl:
 
         skip_file: `str`
             Path to file.
+
+        Returns
+        -------
+        filtered_items: `list`
+            ``items`` but with duplicates removed.
         """
 
         skip_items = spotdl.util.readlines_from_nonbinary_file(skip_file)

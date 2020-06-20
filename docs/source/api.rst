@@ -1,6 +1,10 @@
 API
 ***
 
+I am by no means an experienced API developer. So if you recognize any
+shortcomings while using the API, please report!
+
+
 API Reference
 =============
 
@@ -37,9 +41,6 @@ spotdl.metadata
    :members:
 
 .. autoclass:: spotdl.metadata.embedders.EmbedderDefault
-   :members:
-
-.. autoclass:: spotdl.metadata_search.MetadataSearch
    :members:
 
 spotdl.encode
